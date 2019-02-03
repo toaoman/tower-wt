@@ -14,3 +14,5 @@ Copy app to local directory;
     
 
 Send your ip address to your friend and have fun. Just works with Firefox.
+
+Original Version : https://medium.com/@saurssaurav33/how-to-make-a-browser-walkie-talkie-using-node-js-and-socket-io-ae024bb9b378
