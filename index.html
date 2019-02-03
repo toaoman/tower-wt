@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+ <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+ <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+ <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+ <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
+</head>
+<script>
+function randomnumbergenerator(min,max) 
+{
+    return Math.floor(Math.random()*(max-min+1)+min);
+}
+
+var firstfrequency = randomnumbergenerator(1000000,9999999);
+
+
+var istorage = window.localStorage;
+var rfrequency;
+var currentfrequency;
+
+if (istorage.getItem("randomfrequency")===null) {
+  istorage.setItem("randomfrequency",firstfrequency);
+  istorage.setItem("currentfrequency",firstfrequency);
+  //rfrequency=firstfrequency;
+  currentfrequency = istorage.getItem("currentfrequency");
+} else {
+  //rfrequency = istorage.getItem("randomfrequency");
+  currentfrequency = istorage.getItem("currentfrequency");
+  
+}
+
+
+function changefrequency(frequencya){
+	var istorage = window.localStorage;
+	istorage.setItem("currentfrequency",frequencya);
+	currentfrequency=istorage.getItem("currentfrequency");
+	lcdfrequency(currentfrequency);
+};
+
+function frequencybutton(){
+	var newfrequency = prompt("Please enter the 7-digit frequency!!");
+	if (isNaN(newfrequency) || newfrequency < 1000000 || newfrequency > 9999999) {
+	ons.notification.alert('Please enter 7-digit numerical frequency');
+  } else {
+    changefrequency(newfrequency);
+  }
+}
+
+function myfrequency(){
+	rfrequency = istorage.getItem("randomfrequency");
+	changefrequency(rfrequency);
+}
+
+ function lcdfrequency(frequencynumber){
+document.getElementById("lcdf").innerHTML = frequencynumber;
+ }
+</script>
+<body>
+<ons-page>
+  <ons-toolbar>
+    <div class="center"><b>Tower - Walkie Talkie</b></div>
+  </ons-toolbar>
+  <ons-tabbar swipeable position="auto">
+    <ons-tab page="walkietalkie.html" label="Walkie Talkie" icon="md-input-antenna">
+	
+    </ons-tab>
+    <ons-tab page="info.html" label="About" icon="md-info-outline" active-icon="md-info">
+    </ons-tab>
+  </ons-tabbar>
+</ons-page>
+
+<template id="walkietalkie.html">
+  <ons-page id="Tab1">
+  
+  <ons-list>
+   <ons-list-header><b>frequency</b></ons-list-header>
+    <ons-list-item>
+      <div class="left">
+        <ons-icon icon="md-dialpad" size="40px" class="list-item__icon"></ons-icon>
+      </div>
+      <div class="center">
+        <p id="lcdf" style="text-align:center; color:red; font-size:30px;"> <strong> </strong>  </p>
+		<script>lcdfrequency(currentfrequency);</script>
+      </div>
+	  <div class="right">
+        <p id="iswtavailable" style="text-align:center; color:red; font-size:30px;"> <strong>Ready</strong>  </p>
+      </div>
+    </ons-list-item>
+
+  </ons-list>
+  
+  <button class="button--material" style="background-color: blue; color: white; width: 96%; height: 40%; margin:4px;">  
+  <ons-icon icon="md-mic" size="100px"></ons-icon>
+</button>
+  <button onclick="frequencybutton()" class="button" style="width: 49%; height: 25% margin: 0 auto; border-radius: 4px;">Change Frequency</button>
+<button onclick="myfrequency()" class="button" style="width: 49%; height: 25% margin: 0 auto; border-radius: 4px;">My Frequency </button>
+
+  </ons-page>
+</template>
+
+<template id="info.html">
+  <ons-page id="Tab2">
+    <p style="text-align: center;">
+     Tower - Walkie Talkie app
+    </p>
+  </ons-page>
+</template>
+
+<script>
+    // https://medium.com/@saurssaurav33/how-to-make-a-browser-walkie-talkie-using-node-js-and-socket-io-ae024bb9b378
+    var socket = io();
+    console.log(socket)
+    socket.on('availability', function (message) {
+           if (message=="started") {
+               document.getElementById("iswtavailable").innerHTML = "Busy Now!";
+            } else {
+               document.getElementById("iswtavailable").innerHTML = "Ready";
+            }
+    });
+
+    socket.on('voicedata', function (recorddata) {
+        const audioBlob = new Blob(recorddata);
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);	
+        audio.play();
+    });
+	
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            const mediaRecorder = new MediaRecorder(stream);
+            var recorddata = [];
+            $('.button--material').on('mousedown touchstart', function (e) {
+			    socket.emit('availability',currentfrequency,"started");
+                mediaRecorder.start();
+            }).bind('mouseup mouseleave touchend', function () {
+                if (mediaRecorder.state !== 'inactive') {
+				    socket.emit('availability',currentfrequency,"stopped");
+                    mediaRecorder.stop();
+                }
+            });
+            mediaRecorder.addEventListener("dataavailable", event => {
+                recorddata.push(event.data);
+
+            });
+            mediaRecorder.addEventListener("stop", () => {
+			    
+                socket.emit('voicedata', recorddata, currentfrequency);
+                recorddata = [];
+            });
+        });
+</script>
+</body>
+</html>
