@@ -14,14 +14,14 @@ function randomnumbergenerator(min,max)
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
-var firstfrequency = randomnumbergenerator(1000000,9999999);
-
-
+var firstfrequency;
 var istorage = window.localStorage;
 var rfrequency;
 var currentfrequency;
 
+
 if (istorage.getItem("randomfrequency")===null) {
+  firstfrequency = randomnumbergenerator(1000000,9999999);
   istorage.setItem("randomfrequency",firstfrequency);
   istorage.setItem("currentfrequency",firstfrequency);
   //rfrequency=firstfrequency;
